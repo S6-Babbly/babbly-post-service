@@ -2,9 +2,9 @@ name: Post Service CI/CD Pipeline
 
 on:
   push:
-    branches: [main, master, develop, release]
+    branches: [main]
   pull_request:
-    branches: [main, master, develop, release]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -85,7 +85,7 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: Login to Docker Hub
-        if: github.ref == 'refs/heads/release'
+        if: github.ref == 'refs/heads/main'
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -101,8 +101,8 @@ jobs:
           # Always build the image
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/babbly-backend:${{ github.sha }} .
 
-          # Only push to DockerHub on release branch
-          if [[ "${{ github.ref }}" == "refs/heads/release" ]]; then
+          # Only push to DockerHub on main branch
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             docker tag ${{ secrets.DOCKERHUB_USERNAME }}/babbly-backend:${{ github.sha }} ${{ secrets.DOCKERHUB_USERNAME }}/babbly-backend:latest
             docker push ${{ secrets.DOCKERHUB_USERNAME }}/babbly-backend:${{ github.sha }}
             docker push ${{ secrets.DOCKERHUB_USERNAME }}/babbly-backend:latest
@@ -120,7 +120,7 @@ jobs:
     needs: [docker-build]
     if: |
       always() &&
-      github.ref == 'refs/heads/release' &&
+      github.ref == 'refs/heads/main' &&
       needs.docker-build.result == 'success'
     runs-on: ubuntu-latest
     steps:
