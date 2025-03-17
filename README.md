@@ -1,75 +1,93 @@
 # Babbly Post Service
 
-This is the microservice API for handling posts in the Babbly application, a Twitter-like platform.
+## Overview
+
+This is the post service for the Babbly social media platform. It's built with ASP.NET Core, providing RESTful API endpoints for post management.
 
 ## Features
 
-- Create, read, update, and delete posts
-- Like posts
-- Get posts by user
-- Get all posts
+- RESTful API endpoints for post management
+- JWT validation
+- Business logic implementation
+- Service-to-service communication
 
-## API Endpoints
-
-### Health Check
-
-- `GET /api/health` - Check if the API is running
-
-### Posts
-
-- `GET /api/post` - Get all posts
-- `GET /api/post/{id}` - Get a specific post
-- `GET /api/post/user/{userId}` - Get all posts for a specific user
-- `POST /api/post` - Create a new post
-- `PUT /api/post/{id}` - Update a post
-- `DELETE /api/post/{id}` - Delete a post
-- `POST /api/post/{id}/like` - Like a post
-
-## Development
+## Getting Started
 
 ### Prerequisites
 
-- .NET 7.0 SDK
-- Docker and Docker Compose
+- .NET SDK 7.0 or later
+- PostgreSQL
 
-### Running Locally
+### Installation
 
-1. Make sure the PostgreSQL database is running:
+1. Clone the repository:
 
-   ```
-   docker-compose up -d db
-   ```
-
-2. Run the API:
-
-   ```
-   cd babbly-post-service
-   dotnet run
-   ```
-
-3. The API will be available at http://localhost:5000
-
-### Running with Docker Compose
-
-```
-docker-compose up -d
+```bash
+git clone https://github.com/yourusername/babbly-post-service.git
+cd babbly-post-service
 ```
 
-This will start the database, backend, and frontend services.
+2. Restore dependencies:
 
-### Testing the API
+```bash
+dotnet restore
+```
 
-Use the provided test scripts:
+3. Set up the database connection string in your environment variables or user secrets:
 
-- Windows: `test-api.bat`
-- Unix-like systems: `./test-api.sh`
+```bash
+# For development, you can use user secrets
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Database=babbly-posts;Username=your_username;Password=your_password;"
+```
 
-## Database
+4. Run the application:
 
-The service connects to the PostgreSQL database with the following configuration:
+```bash
+dotnet run --project babbly-post-service/babbly-post-service.csproj
+```
 
-- Database: babbly-posts
-- User: babbly_user
-- Password: babbly_password
+5. The API will be available at [http://localhost:5000](http://localhost:5000).
 
-The connection string is configured in `appsettings.json` and can be overridden with environment variables.
+## API Endpoints
+
+- `GET /api/posts` - Get all posts
+- `GET /api/posts/{id}` - Get a specific post
+- `POST /api/posts` - Create a new post
+- `PUT /api/posts/{id}` - Update a post
+- `DELETE /api/posts/{id}` - Delete a post
+- `GET /api/health` - Health check endpoint
+
+## Testing
+
+```bash
+# Run tests
+dotnet test
+
+# Run tests with coverage
+dotnet test --collect:"XPlat Code Coverage"
+```
+
+## Docker
+
+You can also run the application using Docker:
+
+```bash
+# Build the Docker image
+docker build -t babbly-post-service .
+
+# Run the container
+docker run -p 5000:80 -e "ConnectionStrings__DefaultConnection=Host=your_db_host;Database=babbly-posts;Username=your_username;Password=your_password;" babbly-post-service
+```
+
+## CI/CD Pipeline
+
+This repository uses GitHub Actions for continuous integration and deployment:
+
+- **Code Quality**: SonarCloud analysis
+- **Tests**: Unit and integration tests
+- **Docker Build**: Builds and validates Docker image
+- **Deployment**: Automated deployment to staging/production environments
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

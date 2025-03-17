@@ -533,3 +533,11 @@ obj/
 /wwwroot/node_modules
 
 # End of https://www.toptal.com/developers/gitignore/api/csharp,dotnetcore,aspnetcore
+
+# Environment files
+.env
+.env.*
+.env.local
+.env.development
+.env.test
+.env.production
