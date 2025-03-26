@@ -1,11 +1,10 @@
 using babbly_post_service.Data;
-using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddSingleton<CassandraContext>();
+builder.Services.AddScoped<PostRepository>();
 
 // Add CORS
 builder.Services.AddCors(options =>

@@ -9,4 +9,30 @@ services:
       - "5000:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=db;Database=babbly-posts;Username=babbly_user;Password=babbly_password; 
+      - CassandraHosts=cassandra
+      - CassandraKeyspace=babbly_posts
+      - CassandraUsername=${CASSANDRA_USER:-babbly_user}
+      - CassandraPassword=${CASSANDRA_PASSWORD:-babbly_password}
+    restart: unless-stopped
+    depends_on:
+      - cassandra
+
+  cassandra:
+    image: cassandra:latest
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+      - ./scripts/init-scripts:/docker-entrypoint-initdb.d
+    environment:
+      - CASSANDRA_USER=${CASSANDRA_USER:-babbly_user}
+      - CASSANDRA_PASSWORD=${CASSANDRA_PASSWORD:-babbly_password}
+      - CASSANDRA_CLUSTER_NAME=babbly_cluster
+    healthcheck:
+      test: ["CMD", "cqlsh", "-u", "cassandra", "-p", "cassandra", "-e", "describe keyspaces"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+volumes:
+  cassandra_data: 

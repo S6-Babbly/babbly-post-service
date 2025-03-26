@@ -5,14 +5,10 @@ namespace babbly_post_service.Models
 {
     public class Post
     {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
 
-        [Required]
         public int UserId { get; set; }
 
-        [Required]
         public string Content { get; set; } = string.Empty;
 
         public int Likes { get; set; } = 0;
