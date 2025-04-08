@@ -1,18 +1,17 @@
+using System;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace babbly_post_service.Models
 {
     public class Post
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
-
+        public Guid Id { get; set; }
         public int UserId { get; set; }
-
+        
+        [Required]
         public string Content { get; set; } = string.Empty;
-
-        public int Likes { get; set; } = 0;
-
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; }
+        public string? Location { get; set; }
+        public string? Image { get; set; }
     }
 } 

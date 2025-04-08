@@ -4,6 +4,14 @@
 
 This is the post service for the Babbly social media platform. It's built with ASP.NET Core, providing RESTful API endpoints for post management.
 
+## Tech Stack
+
+- **Backend**: ASP.NET Core 9.0
+- **Database**: Apache Cassandra
+- **Containerization**: Docker
+- **API Documentation**: Swagger/OpenAPI
+- **Testing**: xUnit, REST Client
+
 ## Features
 
 - RESTful API endpoints for post management
@@ -11,12 +19,30 @@ This is the post service for the Babbly social media platform. It's built with A
 - Business logic implementation
 - Service-to-service communication
 
+## Database Schema
+
+### Posts Table
+```sql
+CREATE TABLE posts (
+    id uuid PRIMARY KEY,
+    user_id int,
+    content text,
+    created_at timestamp,
+    location text,
+    image text
+);
+```
+
+### Indices
+- `user_id` index for querying posts by user
+
 ## Getting Started
 
 ### Prerequisites
 
 - .NET SDK 7.0 or later
-- PostgreSQL
+- Docker and Docker Compose
+- Apache Cassandra
 
 ### Installation
 
@@ -33,11 +59,14 @@ cd babbly-post-service
 dotnet restore
 ```
 
-3. Set up the database connection string in your environment variables or user secrets:
+3. Set up the Cassandra connection in your environment variables or user secrets:
 
 ```bash
 # For development, you can use user secrets
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Database=babbly-posts;Username=your_username;Password=your_password;"
+dotnet user-secrets set "CassandraHosts" "localhost"
+dotnet user-secrets set "CassandraKeyspace" "babbly_posts"
+dotnet user-secrets set "CassandraUsername" "babbly_user"
+dotnet user-secrets set "CassandraPassword" "babbly_password"
 ```
 
 4. Run the application:
@@ -47,6 +76,24 @@ dotnet run --project babbly-post-service/babbly-post-service.csproj
 ```
 
 5. The API will be available at [http://localhost:5000](http://localhost:5000).
+
+## Docker Setup
+
+1. Build and start the containers:
+
+```bash
+docker-compose up -d
+```
+
+2. The services will be available at:
+   - Post Service API: [http://localhost:5000](http://localhost:5000)
+   - Cassandra: localhost:9042
+
+3. To stop the containers:
+
+```bash
+docker-compose down
+```
 
 ## API Endpoints
 
@@ -59,25 +106,7 @@ dotnet run --project babbly-post-service/babbly-post-service.csproj
 
 ## Testing
 
-```bash
-# Run tests
-dotnet test
-
-# Run tests with coverage
-dotnet test --collect:"XPlat Code Coverage"
-```
-
-## Docker
-
-You can also run the application using Docker:
-
-```bash
-# Build the Docker image
-docker build -t babbly-post-service .
-
-# Run the container
-docker run -p 5000:80 -e "ConnectionStrings__DefaultConnection=Host=your_db_host;Database=babbly-posts;Username=your_username;Password=your_password;" babbly-post-service
-```
+See [TESTING.md](TESTING.md) for detailed testing instructions.
 
 ## CI/CD Pipeline
 

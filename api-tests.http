@@ -1,0 +1,173 @@
+# Babbly Post Service API Tests
+# This file can be used with REST Client in VS Code or other HTTP clients
+
+@baseUrl = http://localhost:5000
+@samplePostId = 123e4567-e89b-12d3-a456-426614174000
+
+###
+# Health check
+GET {{baseUrl}}/health
+Accept: application/json
+
+###
+# Health check - Database connection
+GET {{baseUrl}}/health/database
+Accept: application/json
+
+###
+# Get all posts
+GET {{baseUrl}}/api/post
+Accept: application/json
+
+###
+# Get popular posts
+GET {{baseUrl}}/api/post/popular
+Accept: application/json
+
+###
+# Create a new post with all fields
+POST {{baseUrl}}/api/post
+Content-Type: application/json
+Accept: application/json
+
+{
+  "userId": 1,
+  "content": "This is a test post from the HTTP client",
+  "location": "New York, USA",
+  "image": "https://example.com/images/post1.jpg"
+}
+
+###
+# Create a new post with only required fields
+POST {{baseUrl}}/api/post
+Content-Type: application/json
+Accept: application/json
+
+{
+  "userId": 1,
+  "content": "This is a test post without optional fields"
+}
+
+###
+# Get a specific post by ID
+# Note: Replace with a valid post ID from your database
+GET {{baseUrl}}/api/post/{{samplePostId}}
+Accept: application/json
+
+###
+# Get posts by user ID
+GET {{baseUrl}}/api/post/user/1
+Accept: application/json
+
+###
+# Update a post with all fields
+# Note: Replace with a valid post ID from your database
+PUT {{baseUrl}}/api/post/{{samplePostId}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "content": "This post has been updated by the HTTP client",
+  "location": "Los Angeles, USA",
+  "image": "https://example.com/images/updated.jpg"
+}
+
+###
+# Update a post with partial fields
+PUT {{baseUrl}}/api/post/{{samplePostId}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "content": "This post has been updated with new content only"
+}
+
+###
+# Delete a post
+# Note: Replace with a valid post ID from your database
+DELETE {{baseUrl}}/api/post/{{samplePostId}}
+Accept: application/json
+
+###
+# Test invalid post creation (content too long)
+POST {{baseUrl}}/api/post
+Content-Type: application/json
+Accept: application/json
+
+{
+  "userId": 1,
+  "content": "This post is too long and should be rejected. This post is too long and should be rejected. This post is too long and should be rejected. This post is too long and should be rejected. This post is too long and should be rejected. This post is too long and should be rejected. This post is too long and should be rejected. This post is too long and should be rejected. This post is too long."
+}
+
+###
+# Test invalid post creation (empty content)
+POST {{baseUrl}}/api/post
+Content-Type: application/json
+Accept: application/json
+
+{
+  "userId": 1,
+  "content": ""
+}
+
+###
+# Test getting a non-existent post
+GET {{baseUrl}}/api/post/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
+###
+# Test updating a non-existent post
+PUT {{baseUrl}}/api/post/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+Accept: application/json
+
+{
+  "content": "This should fail because the post doesn't exist"
+}
+
+###
+# Test deleting a non-existent post
+DELETE {{baseUrl}}/api/post/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
+###
+# Workflow test: Create, get, update, delete
+# Manual workflow - Execute these requests in sequence and update IDs manually
+
+# 1. Create a new post
+POST {{baseUrl}}/api/post
+Content-Type: application/json
+
+{
+  "userId": 99,
+  "content": "Workflow test post",
+  "location": "Test Location",
+  "image": "https://example.com/test.jpg"
+}
+
+###
+# 2. Get the post to verify it was created (replace ID with the one from previous response)
+GET {{baseUrl}}/api/post/{{samplePostId}}
+
+###
+# 3. Update the post (replace ID with the same one)
+PUT {{baseUrl}}/api/post/{{samplePostId}}
+Content-Type: application/json
+
+{
+  "content": "Updated workflow test post",
+  "location": "Updated Location",
+  "image": "https://example.com/updated.jpg"
+}
+
+###
+# 4. Get the post again to verify update (replace ID with the same one)
+GET {{baseUrl}}/api/post/{{samplePostId}}
+
+###
+# 5. Delete the post (replace ID with the same one)
+DELETE {{baseUrl}}/api/post/{{samplePostId}}
+
+###
+# 6. Verify the post is deleted (should return 404) (replace ID with the same one)
+GET {{baseUrl}}/api/post/{{samplePostId}} 

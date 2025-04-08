@@ -2,8 +2,13 @@
 using babbly_post_service.DTOs;
 using babbly_post_service.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Threading.Tasks;
+using Cassandra.Mapping;
+using Cassandra;
 
 namespace babbly_post_service.Controllers
 {
@@ -11,175 +16,132 @@ namespace babbly_post_service.Controllers
     [Route("api/[controller]")]
     public class PostController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IMapper _mapper;
+        private readonly Cassandra.ISession _session;
         private readonly ILogger<PostController> _logger;
 
-        public PostController(ApplicationDbContext context, ILogger<PostController> logger)
+        public PostController(CassandraContext context, ILogger<PostController> logger)
         {
-            _context = context;
+            _mapper = context.Mapper;
+            _session = context.Session;
             _logger = logger;
         }
 
         // GET: api/Post
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<PostDto>>> GetPosts()
+        public async Task<ActionResult<IEnumerable<Post>>> GetPosts()
         {
-            _logger.LogInformation("Getting all posts");
-            var posts = await _context.Posts
-                .OrderByDescending(p => p.CreatedAt)
-                .Select(p => MapPostToDto(p))
-                .ToListAsync();
-
-            return Ok(posts);
-        }
-
-        // GET: api/Post/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<PostDto>> GetPost(int id)
-        {
-            _logger.LogInformation("Getting post with ID: {PostId}", id);
-            var post = await _context.Posts.FindAsync(id);
-
-            if (post == null)
+            try
             {
-                _logger.LogWarning("Post with ID: {PostId} not found", id);
-                return NotFound();
+                var posts = await _mapper.FetchAsync<Post>("SELECT * FROM posts");
+                return Ok(posts);
             }
-
-            return Ok(MapPostToDto(post));
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting posts");
+                return StatusCode(500, "Internal server error");
+            }
         }
 
-        // GET: api/Post/user/5
+        // GET: api/Post/{id}
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Post>> GetPost(Guid id)
+        {
+            try
+            {
+                var post = await _mapper.SingleOrDefaultAsync<Post>("WHERE id = ?", id);
+                if (post == null)
+                {
+                    return NotFound();
+                }
+                return Ok(post);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting post {Id}", id);
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        // GET: api/Post/user/{userId}
         [HttpGet("user/{userId}")]
         public async Task<ActionResult<IEnumerable<PostDto>>> GetPostsByUser(int userId)
         {
             _logger.LogInformation("Getting posts for user with ID: {UserId}", userId);
-            var posts = await _context.Posts
-                .Where(p => p.UserId == userId)
-                .OrderByDescending(p => p.CreatedAt)
-                .Select(p => MapPostToDto(p))
-                .ToListAsync();
+            var posts = await _mapper.FetchAsync<Post>("WHERE user_id = ?", userId);
+            return Ok(posts.Select(p => MapPostToDto(p)));
+        }
 
-            return Ok(posts);
+        // GET: api/Post/popular
+        [HttpGet("popular")]
+        public async Task<ActionResult<IEnumerable<PostDto>>> GetPopularPosts()
+        {
+            _logger.LogInformation("Getting popular posts");
+            var posts = await _mapper.FetchAsync<Post>("WHERE is_popular = true");
+            return Ok(posts.Select(p => MapPostToDto(p)));
         }
 
         // POST: api/Post
         [HttpPost]
-        public async Task<ActionResult<PostDto>> CreatePost(CreatePostDto createPostDto)
+        public async Task<ActionResult<Post>> CreatePost(Post post)
         {
-            // Validate the post content
-            if (string.IsNullOrWhiteSpace(createPostDto.Content))
-            {
-                return BadRequest("Post content cannot be empty");
-            }
-
-            if (createPostDto.Content.Length > 280)
-            {
-                return BadRequest("Post content cannot exceed 280 characters");
-            }
-
-            _logger.LogInformation("Creating new post for user: {UserId}", createPostDto.UserId);
-            
-            // Create a new post with server-generated timestamp
-            var post = new Post
-            {
-                UserId = createPostDto.UserId,
-                Content = createPostDto.Content,
-                CreatedAt = DateTime.UtcNow,
-                Likes = 0 // Explicitly initialize likes to 0
-            };
-
-            _context.Posts.Add(post);
-            await _context.SaveChangesAsync();
-
-            // Return the created post with all server-generated fields
-            return CreatedAtAction(nameof(GetPost), new { id = post.Id }, MapPostToDto(post));
-        }
-
-        // PUT: api/Post/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdatePost(int id, UpdatePostDto updatePostDto)
-        {
-            // Validate the post content
-            if (updatePostDto.Content != null && updatePostDto.Content.Length > 280)
-            {
-                return BadRequest("Post content cannot exceed 280 characters");
-            }
-
-            _logger.LogInformation("Updating post with ID: {PostId}", id);
-            
-            var post = await _context.Posts.FindAsync(id);
-            if (post == null)
-            {
-                _logger.LogWarning("Post with ID: {PostId} not found", id);
-                return NotFound();
-            }
-
-            if (updatePostDto.Content != null)
-            {
-                post.Content = updatePostDto.Content;
-            }
-
             try
             {
-                await _context.SaveChangesAsync();
-                return NoContent();
+                post.Id = Guid.NewGuid();
+                post.CreatedAt = DateTime.UtcNow;
+                await _mapper.InsertAsync(post);
+                return CreatedAtAction(nameof(GetPost), new { id = post.Id }, post);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!PostExists(id))
+                _logger.LogError(ex, "Error creating post");
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        // PUT: api/Post/{id}
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdatePost(Guid id, Post post)
+        {
+            try
+            {
+                var existingPost = await _mapper.SingleOrDefaultAsync<Post>("WHERE id = ?", id);
+                if (existingPost == null)
                 {
                     return NotFound();
                 }
-                else
-                {
-                    throw;
-                }
+
+                post.Id = id;
+                await _mapper.UpdateAsync(post);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating post {Id}", id);
+                return StatusCode(500, "Internal server error");
             }
         }
 
-        // DELETE: api/Post/5
+        // DELETE: api/Post/{id}
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePost(int id)
+        public async Task<IActionResult> DeletePost(Guid id)
         {
-            _logger.LogInformation("Deleting post with ID: {PostId}", id);
-            
-            var post = await _context.Posts.FindAsync(id);
-            if (post == null)
+            try
             {
-                _logger.LogWarning("Post with ID: {PostId} not found", id);
-                return NotFound();
+                var post = await _mapper.SingleOrDefaultAsync<Post>("WHERE id = ?", id);
+                if (post == null)
+                {
+                    return NotFound();
+                }
+
+                await _mapper.DeleteAsync<Post>("WHERE id = ?", id);
+                return NoContent();
             }
-
-            _context.Posts.Remove(post);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        // POST: api/Post/5/like
-        [HttpPost("{id}/like")]
-        public async Task<IActionResult> LikePost(int id)
-        {
-            _logger.LogInformation("Liking post with ID: {PostId}", id);
-            
-            var post = await _context.Posts.FindAsync(id);
-            if (post == null)
+            catch (Exception ex)
             {
-                _logger.LogWarning("Post with ID: {PostId} not found", id);
-                return NotFound();
+                _logger.LogError(ex, "Error deleting post {Id}", id);
+                return StatusCode(500, "Internal server error");
             }
-
-            // Increment likes count
-            post.Likes += 1;
-            await _context.SaveChangesAsync();
-
-            return Ok(new { likes = post.Likes });
-        }
-
-        private bool PostExists(int id)
-        {
-            return _context.Posts.Any(e => e.Id == id);
         }
 
         // Helper method to map Post entity to PostDto
@@ -190,9 +152,7 @@ namespace babbly_post_service.Controllers
                 Id = post.Id,
                 UserId = post.UserId,
                 Content = post.Content,
-                Likes = post.Likes,
                 CreatedAt = post.CreatedAt,
-                // Add any additional formatting or computed properties here
                 TimeAgo = FormatTimeAgo(post.CreatedAt)
             };
         }
@@ -200,46 +160,32 @@ namespace babbly_post_service.Controllers
         // Helper method to format time ago string on the server side
         private static string FormatTimeAgo(DateTime dateTime)
         {
-            var now = DateTime.UtcNow;
-            var diffInSeconds = (int)(now - dateTime).TotalSeconds;
-            
-            if (diffInSeconds < 60)
+            var span = DateTime.UtcNow - dateTime;
+
+            if (span.TotalDays > 365)
             {
-                return $"{diffInSeconds}s";
+                var years = (int)(span.TotalDays / 365);
+                return $"{years}y ago";
             }
-            
-            var diffInMinutes = (int)(diffInSeconds / 60);
-            if (diffInMinutes < 60)
+            if (span.TotalDays > 30)
             {
-                return $"{diffInMinutes}m";
+                var months = (int)(span.TotalDays / 30);
+                return $"{months}mo ago";
             }
-            
-            var diffInHours = (int)(diffInMinutes / 60);
-            if (diffInHours < 24)
+            if (span.TotalDays > 1)
             {
-                return $"{diffInHours}h";
+                return $"{(int)span.TotalDays}d ago";
             }
-            
-            var diffInDays = (int)(diffInHours / 24);
-            if (diffInDays < 7)
+            if (span.TotalHours > 1)
             {
-                return $"{diffInDays}d";
+                return $"{(int)span.TotalHours}h ago";
             }
-            
-            var diffInWeeks = (int)(diffInDays / 7);
-            if (diffInWeeks < 4)
+            if (span.TotalMinutes > 1)
             {
-                return $"{diffInWeeks}w";
+                return $"{(int)span.TotalMinutes}m ago";
             }
-            
-            var diffInMonths = (int)(diffInDays / 30);
-            if (diffInMonths < 12)
-            {
-                return $"{diffInMonths}mo";
-            }
-            
-            var diffInYears = (int)(diffInDays / 365);
-            return $"{diffInYears}y";
+
+            return "Just now";
         }
     }
 }

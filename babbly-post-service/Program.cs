@@ -1,10 +1,17 @@
 using babbly_post_service.Data;
+using babbly_post_service.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddSingleton<CassandraContext>();
+builder.Services.AddScoped<ICassandraRepository<Post>, PostRepository>();
 builder.Services.AddScoped<PostRepository>();
+
+// Configure logging
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
 
 // Add CORS
 builder.Services.AddCors(options =>
@@ -39,5 +46,13 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Register shutdown event to dispose of Cassandra context
+app.Lifetime.ApplicationStopping.Register(() =>
+{
+    var scope = app.Services.CreateScope();
+    var cassandraContext = scope.ServiceProvider.GetRequiredService<CassandraContext>();
+    cassandraContext.Dispose();
+});
 
 app.Run();

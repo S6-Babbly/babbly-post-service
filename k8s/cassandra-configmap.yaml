@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cassandra-config
-data:
-  hosts: "cassandra-service" # This should be the Cassandra service name in K8s
-  keyspace: "babbly_posts"
