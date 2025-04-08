@@ -55,7 +55,7 @@ POST {{baseUrl}}/posts
 Content-Type: application/json
 
 {
-    "userId": 1,
+    "userId": "user1",
     "content": "Test post content",
     "location": "New York",
     "image": "https://example.com/image.jpg"

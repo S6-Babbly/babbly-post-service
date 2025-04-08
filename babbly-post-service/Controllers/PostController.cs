@@ -65,7 +65,7 @@ namespace babbly_post_service.Controllers
 
         // GET: api/Post/user/{userId}
         [HttpGet("user/{userId}")]
-        public async Task<ActionResult<IEnumerable<PostDto>>> GetPostsByUser(int userId)
+        public async Task<ActionResult<IEnumerable<PostDto>>> GetPostsByUser(string userId)
         {
             _logger.LogInformation("Getting posts for user with ID: {UserId}", userId);
             var posts = await _mapper.FetchAsync<Post>("WHERE user_id = ?", userId);

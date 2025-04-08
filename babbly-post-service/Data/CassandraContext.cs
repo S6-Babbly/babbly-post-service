@@ -130,7 +130,7 @@ namespace babbly_post_service.Data
                 session.Execute(@"
                     CREATE TABLE IF NOT EXISTS posts (
                         id uuid PRIMARY KEY,
-                        user_id int,
+                        user_id text,
                         content text,
                         created_at timestamp,
                         location text,

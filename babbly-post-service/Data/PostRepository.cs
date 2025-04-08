@@ -15,7 +15,7 @@ namespace babbly_post_service.Data
         {
         }
 
-        public async Task<IEnumerable<Post>> GetByUserIdAsync(int userId)
+        public async Task<IEnumerable<Post>> GetByUserIdAsync(string userId)
         {
             return await QueryAsync("WHERE user_id = ? ALLOW FILTERING", userId);
         }

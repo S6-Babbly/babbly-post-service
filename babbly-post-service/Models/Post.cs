@@ -6,7 +6,7 @@ namespace babbly_post_service.Models
     public class Post
     {
         public Guid Id { get; set; }
-        public int UserId { get; set; }
+        public string UserId { get; set; } = string.Empty;
         
         [Required]
         public string Content { get; set; } = string.Empty;

@@ -31,7 +31,7 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "userId": 1,
+  "userId": "user1",
   "content": "This is a test post from the HTTP client",
   "location": "New York, USA",
   "image": "https://example.com/images/post1.jpg"
@@ -44,7 +44,7 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "userId": 1,
+  "userId": "user1",
   "content": "This is a test post without optional fields"
 }
 
@@ -56,7 +56,7 @@ Accept: application/json
 
 ###
 # Get posts by user ID
-GET {{baseUrl}}/api/post/user/1
+GET {{baseUrl}}/api/post/user/user1
 Accept: application/json
 
 ###
@@ -95,7 +95,7 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "userId": 1,
+  "userId": "user1",
   "content": "This post is too long and should be rejected. This post is too long and should be rejected. This post is too long and should be rejected. This post is too long and should be rejected. This post is too long and should be rejected. This post is too long and should be rejected. This post is too long and should be rejected. This post is too long and should be rejected. This post is too long."
 }
 
@@ -106,7 +106,7 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "userId": 1,
+  "userId": "user1",
   "content": ""
 }
 
@@ -139,7 +139,7 @@ POST {{baseUrl}}/api/post
 Content-Type: application/json
 
 {
-  "userId": 99,
+  "userId": "user99",
   "content": "Workflow test post",
   "location": "Test Location",
   "image": "https://example.com/test.jpg"
