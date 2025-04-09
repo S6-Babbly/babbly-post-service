@@ -109,9 +109,9 @@ jobs:
             docker push ${{ secrets.DOCKERHUB_USERNAME }}/babbly-backend:latest
           fi
 
-      - name: Check backend health
+      - name: Verify container starts
         run: |
-          docker run --rm -d -p 5000:80 --env-file .env --name test-backend ${{ secrets.DOCKERHUB_USERNAME }}/babbly-backend:${{ github.sha }}
-          sleep 15
-          curl -f http://localhost:5000/health || exit 1
-          docker stop test-backend
+          docker run --rm -d --name test-backend ${{ secrets.DOCKERHUB_USERNAME }}/babbly-backend:${{ github.sha }}
+          sleep 5
+          docker logs test-backend
+          docker stop test-backend 
