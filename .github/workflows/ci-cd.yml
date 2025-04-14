@@ -100,18 +100,18 @@ jobs:
       - name: Build and push Backend
         run: |
           # Always build the image
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/babbly-backend:${{ github.sha }} .
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/babbly-post-service:${{ github.sha }} .
 
           # Only push to DockerHub on main branch
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            docker tag ${{ secrets.DOCKERHUB_USERNAME }}/babbly-backend:${{ github.sha }} ${{ secrets.DOCKERHUB_USERNAME }}/babbly-backend:latest
-            docker push ${{ secrets.DOCKERHUB_USERNAME }}/babbly-backend:${{ github.sha }}
-            docker push ${{ secrets.DOCKERHUB_USERNAME }}/babbly-backend:latest
+            docker tag ${{ secrets.DOCKERHUB_USERNAME }}/babbly-post-service:${{ github.sha }} ${{ secrets.DOCKERHUB_USERNAME }}/babbly-post-service:latest
+            docker push ${{ secrets.DOCKERHUB_USERNAME }}/babbly-post-service:${{ github.sha }}
+            docker push ${{ secrets.DOCKERHUB_USERNAME }}/babbly-post-service:latest
           fi
 
       - name: Verify container starts
         run: |
-          docker run --rm -d --name test-backend ${{ secrets.DOCKERHUB_USERNAME }}/babbly-backend:${{ github.sha }}
+          docker run --rm -d --name test-backend ${{ secrets.DOCKERHUB_USERNAME }}/babbly-post-service:${{ github.sha }}
           sleep 5
           docker logs test-backend
           docker stop test-backend 
