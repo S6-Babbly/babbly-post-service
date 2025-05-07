@@ -13,7 +13,7 @@ using Cassandra;
 namespace babbly_post_service.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/posts")]
     public class PostController : ControllerBase
     {
         private readonly IMapper _mapper;

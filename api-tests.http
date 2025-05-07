@@ -1,7 +1,7 @@
 # Babbly Post Service API Tests
 # This file can be used with REST Client in VS Code or other HTTP clients
 
-@baseUrl = http://localhost:5000
+@baseUrl = http://localhost:8080
 @samplePostId = 123e4567-e89b-12d3-a456-426614174000
 
 ###
