@@ -35,7 +35,7 @@ jobs:
       - name: Cache SonarCloud packages
         uses: actions/cache@v4
         with:
-          path: ~/.sonar/cache
+          path: ~\\sonar\\cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
@@ -46,12 +46,12 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY_POST_SERVICE }} # Unique project key
-            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
+            -Dsonar.projectKey=S6-Babbly_babbly-post-service
+            -Dsonar.organization=babblyisgeweldig
             -Dsonar.sources=.
             -Dsonar.exclusions=**/node_modules/**,**/bin/**,**/obj/**,**/*.test.js,**/*.spec.js
             -Dsonar.cs.opencover.reportsPaths=**/coverage.opencover.xml
-
+          
   backend-tests:
     name: Backend Tests
     runs-on: ubuntu-latest
@@ -70,7 +70,7 @@ jobs:
         run: dotnet build ./babbly-post-service.sln --no-restore
 
       - name: Test
-        run: dotnet test ./babbly-post-service.sln --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./coverage --logger "trx;LogFileName=test-results.trx"
+        run: dotnet test ./babbly-post-service.sln --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
 
   docker-build-and-push:
     name: Docker Build and Push to Docker Hub
