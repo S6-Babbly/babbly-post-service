@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: post-service
-        image: babbly-post-service:latest
+        image: morrishh/babbly-post-service:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
