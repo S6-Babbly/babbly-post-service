@@ -34,7 +34,9 @@ namespace babbly_post_service.Controllers
             try
             {
                 var posts = await _mapper.FetchAsync<Post>("SELECT * FROM posts");
-                return Ok(posts);
+                // Order by created_at descending to show newest posts first
+                var orderedPosts = posts.OrderByDescending(p => p.CreatedAt).ToList();
+                return Ok(orderedPosts);
             }
             catch (Exception ex)
             {
@@ -69,7 +71,9 @@ namespace babbly_post_service.Controllers
         {
             _logger.LogInformation("Getting posts for user with ID: {UserId}", userId);
             var posts = await _mapper.FetchAsync<Post>("WHERE user_id = ?", userId);
-            return Ok(posts.Select(p => MapPostToDto(p)));
+            // Order by created_at descending to show newest posts first
+            var orderedPosts = posts.OrderByDescending(p => p.CreatedAt);
+            return Ok(orderedPosts.Select(p => MapPostToDto(p)));
         }
 
         // GET: api/Post/popular
