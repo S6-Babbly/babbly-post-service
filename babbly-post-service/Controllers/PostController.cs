@@ -280,5 +280,35 @@ namespace babbly_post_service.Controllers
 
             return "Just now";
         }
+
+        // DELETE: api/Post/user/{userId}
+        [HttpDelete("user/{userId}")]
+        public async Task<IActionResult> DeleteAllPostsByUser(string userId)
+        {
+            try
+            {
+                _logger.LogInformation("Deleting all posts for user {UserId}", userId);
+                
+                // Get all posts by the user
+                var userPosts = await _mapper.FetchAsync<Post>("WHERE user_id = ?", userId);
+                var postsList = userPosts.ToList();
+                
+                _logger.LogInformation("Found {Count} posts to delete for user {UserId}", postsList.Count, userId);
+                
+                // Delete each post
+                foreach (var post in postsList)
+                {
+                    await _mapper.DeleteAsync<Post>("WHERE id = ?", post.Id);
+                }
+                
+                _logger.LogInformation("Successfully deleted {Count} posts for user {UserId}", postsList.Count, userId);
+                return Ok(new { message = $"Deleted {postsList.Count} posts for user {userId}" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting posts for user {UserId}", userId);
+                return StatusCode(500, "Internal server error");
+            }
+        }
     }
 }
