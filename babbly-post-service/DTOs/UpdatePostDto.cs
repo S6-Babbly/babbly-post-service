@@ -7,7 +7,7 @@ namespace babbly_post_service.DTOs
         [StringLength(280, MinimumLength = 1, ErrorMessage = "Content must be between 1 and 280 characters")]
         public string? Content { get; set; }
 
-        [Url(ErrorMessage = "MediaUrl must be a valid URL")]
+        // MediaUrl is optional - validation handled in controller if provided
         public string? MediaUrl { get; set; }
     }
 } 

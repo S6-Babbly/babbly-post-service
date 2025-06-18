@@ -98,6 +98,12 @@ namespace babbly_post_service.Controllers
                     return BadRequest(new { error = "Post content cannot exceed 280 characters" });
                 }
 
+                // Validate MediaUrl if provided
+                if (!string.IsNullOrWhiteSpace(postDto.MediaUrl) && !Uri.IsWellFormedUriString(postDto.MediaUrl, UriKind.Absolute))
+                {
+                    return BadRequest(new { error = "MediaUrl must be a valid URL" });
+                }
+
                 // Get authenticated user ID from JWT headers (forwarded by API Gateway)
                 var userId = Request.Headers["X-User-Id"].FirstOrDefault();
                 if (string.IsNullOrWhiteSpace(userId))
@@ -167,9 +173,13 @@ namespace babbly_post_service.Controllers
                     existingPost.Content = postDto.Content.Trim();
                 }
 
-                // Update other fields if provided
+                // Validate and update MediaUrl if provided
                 if (postDto.MediaUrl != null)
                 {
+                    if (!string.IsNullOrWhiteSpace(postDto.MediaUrl) && !Uri.IsWellFormedUriString(postDto.MediaUrl, UriKind.Absolute))
+                    {
+                        return BadRequest(new { error = "MediaUrl must be a valid URL" });
+                    }
                     existingPost.Image = postDto.MediaUrl;
                 }
 
