@@ -83,55 +83,46 @@ namespace babbly_post_service.Controllers
 
         // POST: api/Post
         [HttpPost]
-        public async Task<ActionResult<Post>> CreatePost(Post post)
+        public async Task<ActionResult<Post>> CreatePost(CreatePostDto postDto)
         {
             try
             {
-                // Validate user from API Gateway headers
-                var userId = Request.Headers["X-User-Id"].FirstOrDefault();
-                var userRoles = Request.Headers["X-User-Roles"].FirstOrDefault()?.Split(',') ?? Array.Empty<string>();
-                
-                if (string.IsNullOrEmpty(userId))
-                {
-                    _logger.LogWarning("CreatePost: No user ID found in request headers");
-                    return Unauthorized(new { error = "Authentication required - no user ID in headers" });
-                }
-                
-                // Verify the post's userId matches the authenticated user
-                if (post.UserId != userId)
-                {
-                    _logger.LogWarning("CreatePost: User {UserId} attempted to create post for different user {PostUserId}", 
-                        userId, post.UserId);
-                    return StatusCode(403, new { error = "Cannot create posts for other users" });
-                }
-                
-                // Basic authorization - authenticated users can create posts
-                if (!userRoles.Contains("user") && !userRoles.Contains("admin"))
-                {
-                    _logger.LogWarning("CreatePost: User {UserId} lacks required role for creating posts", userId);
-                    return StatusCode(403, new { error = "Insufficient permissions to create posts" });
-                }
-                
                 // Validate content
-                if (string.IsNullOrWhiteSpace(post.Content))
+                if (string.IsNullOrWhiteSpace(postDto.Content))
                 {
                     return BadRequest(new { error = "Post content cannot be empty" });
                 }
                 
-                if (post.Content.Length > 280)
+                if (postDto.Content.Length > 280)
                 {
                     return BadRequest(new { error = "Post content cannot exceed 280 characters" });
                 }
 
-                post.Id = Guid.NewGuid();
-                post.CreatedAt = DateTime.UtcNow;
-                
-                // Ensure UserId is set from authenticated user
-                post.UserId = userId;
+                // Get authenticated user ID from JWT headers (forwarded by API Gateway)
+                var userId = Request.Headers["X-User-Id"].FirstOrDefault();
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    return Unauthorized(new { error = "Authentication required. User ID not found in token." });
+                }
+
+                // Create post with authenticated user
+                var post = new Post
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = userId,
+                    Content = postDto.Content.Trim(),
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                // Set optional fields if provided
+                if (!string.IsNullOrWhiteSpace(postDto.MediaUrl))
+                {
+                    post.Image = postDto.MediaUrl;
+                }
                 
                 await _mapper.InsertAsync(post);
                 
-                _logger.LogInformation("Created post {PostId} for user {UserId}", post.Id, userId);
+                _logger.LogInformation("Created post {PostId} for authenticated user {UserId}", post.Id, userId);
                 return CreatedAtAction(nameof(GetPost), new { id = post.Id }, post);
             }
             catch (Exception ex)
@@ -143,42 +134,43 @@ namespace babbly_post_service.Controllers
 
         // PUT: api/Post/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdatePost(Guid id, Post post)
+        public async Task<IActionResult> UpdatePost(Guid id, UpdatePostDto postDto)
         {
             try
             {
-                // Validate user from API Gateway headers
+                // Get authenticated user ID from JWT headers
                 var userId = Request.Headers["X-User-Id"].FirstOrDefault();
-                var userRoles = Request.Headers["X-User-Roles"].FirstOrDefault()?.Split(',') ?? Array.Empty<string>();
-                
-                if (string.IsNullOrEmpty(userId))
+                if (string.IsNullOrWhiteSpace(userId))
                 {
-                    _logger.LogWarning("UpdatePost: No user ID found in request headers");
-                    return Unauthorized(new { error = "Authentication required - no user ID in headers" });
+                    return Unauthorized(new { error = "Authentication required. User ID not found in token." });
                 }
-                
+
                 var existingPost = await _mapper.SingleOrDefaultAsync<Post>("WHERE id = ?", id);
                 if (existingPost == null)
                 {
-                    return NotFound();
+                    return NotFound(new { error = "Post not found" });
                 }
                 
-                // Authorization: Only post owner or admin can update
-                if (existingPost.UserId != userId && !userRoles.Contains("admin"))
+                // Ensure user can only edit their own posts
+                if (existingPost.UserId != userId)
                 {
-                    _logger.LogWarning("UpdatePost: User {UserId} attempted to update post {PostId} owned by {OwnerId}", 
-                        userId, id, existingPost.UserId);
-                    return StatusCode(403, new { error = "Can only update your own posts" });
+                    return Forbid("You can only edit your own posts");
                 }
                 
-                // Validate content if it's being updated
-                if (!string.IsNullOrWhiteSpace(post.Content))
+                // Validate and update content if provided
+                if (!string.IsNullOrWhiteSpace(postDto.Content))
                 {
-                    if (post.Content.Length > 280)
+                    if (postDto.Content.Length > 280)
                     {
                         return BadRequest(new { error = "Post content cannot exceed 280 characters" });
                     }
-                    existingPost.Content = post.Content;
+                    existingPost.Content = postDto.Content.Trim();
+                }
+
+                // Update other fields if provided
+                if (postDto.MediaUrl != null)
+                {
+                    existingPost.Image = postDto.MediaUrl;
                 }
 
                 existingPost.Id = id;
@@ -200,28 +192,23 @@ namespace babbly_post_service.Controllers
         {
             try
             {
-                // Validate user from API Gateway headers
+                // Get authenticated user ID from JWT headers
                 var userId = Request.Headers["X-User-Id"].FirstOrDefault();
-                var userRoles = Request.Headers["X-User-Roles"].FirstOrDefault()?.Split(',') ?? Array.Empty<string>();
-                
-                if (string.IsNullOrEmpty(userId))
+                if (string.IsNullOrWhiteSpace(userId))
                 {
-                    _logger.LogWarning("DeletePost: No user ID found in request headers");
-                    return Unauthorized(new { error = "Authentication required - no user ID in headers" });
+                    return Unauthorized(new { error = "Authentication required. User ID not found in token." });
                 }
-                
+
                 var post = await _mapper.SingleOrDefaultAsync<Post>("WHERE id = ?", id);
                 if (post == null)
                 {
-                    return NotFound();
+                    return NotFound(new { error = "Post not found" });
                 }
-                
-                // Authorization: Only post owner or admin can delete
-                if (post.UserId != userId && !userRoles.Contains("admin"))
+
+                // Ensure user can only delete their own posts
+                if (post.UserId != userId)
                 {
-                    _logger.LogWarning("DeletePost: User {UserId} attempted to delete post {PostId} owned by {OwnerId}", 
-                        userId, id, post.UserId);
-                    return StatusCode(403, new { error = "Can only delete your own posts" });
+                    return Forbid("You can only delete your own posts");
                 }
 
                 await _mapper.DeleteAsync<Post>("WHERE id = ?", id);
